@@ -1,4 +1,3 @@
-
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { WasteBin } from './binsSlice';
 
@@ -285,6 +284,12 @@ export const routesSlice = createSlice({
         traditionalMetrics: null,
         optimizedMetrics: null,
       };
+    },
+    
+    emptyBin: (state, action: PayloadAction<string>) => {
+      // This action is needed for SimulationEngine
+      // It will be handled in the bins reducer, but we need to export it here for SimulationEngine
+      // Implementation is in binsSlice.ts
     }
   }
 });
@@ -294,6 +299,7 @@ export const {
   startRoute,
   updateRouteProgress,
   resetRoutes,
+  emptyBin,  // Add the export for emptyBin
 } = routesSlice.actions;
 
 export default routesSlice.reducer;
