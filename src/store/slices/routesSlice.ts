@@ -1,305 +1,197 @@
+
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { WasteBin } from './binsSlice';
 
+// Define route point type
 export interface RoutePoint {
-  id: string;
-  location: [number, number];
-  binId?: string;
-  isDepot?: boolean;
+  location: [number, number]; // [lat, lng]
+  binId?: string; // Optional bin ID if this point has a bin
 }
 
-export interface RouteVehicle {
-  id: string;
-  currentPosition: [number, number];
-  currentRouteIndex: number;
-  capacity: number;
-  currentLoad: number;
-  speed: number; // km/h
-  status: 'idle' | 'en-route' | 'collecting' | 'returning';
-}
-
-export interface RouteMetrics {
-  totalDistance: number; // km
-  estimatedDuration: number; // minutes
-  fuelConsumption: number; // liters
-  co2Emissions: number; // kg
-  binsCollected: number;
-  totalWasteCollected: number; // liters
-}
-
+// Define route type
 export interface Route {
   id: string;
   name: string;
-  points: RoutePoint[];
-  vehicle: RouteVehicle;
-  metrics: RouteMetrics;
   type: 'traditional' | 'optimized';
-  completed: boolean;
+  points: RoutePoint[];
   inProgress: boolean;
-}
-
-interface RoutesState {
-  routes: Route[];
-  activeRouteId: string | null;
-  routeComparison: {
-    traditionalMetrics: RouteMetrics | null;
-    optimizedMetrics: RouteMetrics | null;
+  completed: boolean;
+  progress: number; // 0-1 for animation
+  metrics: {
+    totalDistance: number; // kilometers
+    estimatedDuration: number; // minutes
+    binsCollected: number; // count
   };
 }
 
-// Utility function to calculate rough distance in km between two points
-const calculateDistance = (point1: [number, number], point2: [number, number]): number => {
-  const R = 6371; // Earth's radius in km
-  const lat1 = point1[0] * Math.PI / 180;
-  const lat2 = point2[0] * Math.PI / 180;
-  const dLat = (point2[0] - point1[0]) * Math.PI / 180;
-  const dLon = (point2[1] - point1[1]) * Math.PI / 180;
-  
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1) * Math.cos(lat2) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-};
+// Define the state type
+interface RoutesState {
+  routes: Route[];
+  activeRouteId: string | null;
+}
 
+// Initial state
 const initialState: RoutesState = {
   routes: [],
   activeRouteId: null,
-  routeComparison: {
-    traditionalMetrics: null,
-    optimizedMetrics: null,
-  },
 };
 
+// Helper to calculate route metrics
+const calculateRouteMetrics = (points: RoutePoint[]) => {
+  // In a real app, we'd do proper distance calculations
+  // For demo purposes, we'll use simplified calculations
+  let distance = 0;
+  const binsCount = points.filter(p => p.binId).length;
+  
+  // Calculate rough distance
+  for (let i = 1; i < points.length; i++) {
+    const prevPoint = points[i - 1];
+    const currPoint = points[i];
+    // Very simplified distance calculation (not accurate)
+    distance += Math.sqrt(
+      Math.pow(currPoint.location[0] - prevPoint.location[0], 2) +
+      Math.pow(currPoint.location[1] - prevPoint.location[1], 2)
+    ) * 111; // Rough conversion to km
+  }
+  
+  // Estimate duration (assume 30 km/h average speed + 2 min per bin)
+  const drivingMinutes = (distance / 30) * 60;
+  const collectionMinutes = binsCount * 2;
+  
+  return {
+    totalDistance: distance,
+    estimatedDuration: drivingMinutes + collectionMinutes,
+    binsCollected: binsCount,
+  };
+};
+
+// Create slice
 export const routesSlice = createSlice({
   name: 'routes',
   initialState,
   reducers: {
-    generateRoutes: (state, action: PayloadAction<{ bins: WasteBin[], depot: [number, number] }>) => {
+    // Generate routes based on bin data
+    generateRoutes: (state, action: PayloadAction<{ 
+      bins: any[]; 
+      depot: [number, number]; 
+    }>) => {
       const { bins, depot } = action.payload;
       
-      // Clear existing routes
-      state.routes = [];
-      
-      // Only consider bins that are at least 50% full for collection
-      const binsNeedingCollection = bins.filter(bin => bin.fillLevel >= 50);
-      
-      if (binsNeedingCollection.length === 0) {
-        return;
-      }
-      
-      // Generate traditional route (fixed sequence based on bin IDs)
-      const traditionalBins = [...binsNeedingCollection].sort((a, b) => a.id.localeCompare(b.id));
-      const traditionalRoutePoints: RoutePoint[] = [
-        { id: 'depot-start', location: depot, isDepot: true }
+      // Create traditional route (sequential collection)
+      const traditionalPoints: RoutePoint[] = [
+        { location: depot }, // Start at depot
       ];
       
-      let traditionalDistance = 0;
-      let lastPoint = depot;
-      
-      // Add all bins to the traditional route
-      traditionalBins.forEach(bin => {
-        traditionalRoutePoints.push({
-          id: `route-point-${bin.id}`,
+      // Add bins in simple sequential order
+      bins.forEach(bin => {
+        traditionalPoints.push({
           location: bin.location,
           binId: bin.id
         });
-        
-        // Calculate distance from last point
-        traditionalDistance += calculateDistance(lastPoint, bin.location);
-        lastPoint = bin.location;
       });
       
-      // Return to depot
-      traditionalRoutePoints.push({ id: 'depot-end', location: depot, isDepot: true });
-      traditionalDistance += calculateDistance(lastPoint, depot);
+      traditionalPoints.push({ location: depot }); // Return to depot
       
-      // Calculate metrics for traditional route
-      const traditionalMetrics: RouteMetrics = {
-        totalDistance: traditionalDistance,
-        estimatedDuration: traditionalDistance / 25 * 60, // Assuming 25 km/h avg speed, convert to minutes
-        fuelConsumption: traditionalDistance * 0.3, // Assuming 0.3L/km
-        co2Emissions: traditionalDistance * 2.68, // kg CO2 per liter diesel * fuel consumption
-        binsCollected: traditionalBins.length,
-        totalWasteCollected: traditionalBins.reduce((sum, bin) => sum + (bin.capacity * bin.fillLevel / 100), 0)
-      };
+      // Create optimized route (sorted by fill level)
+      const sortedBins = [...bins].sort((a, b) => b.fillLevel - a.fillLevel);
       
-      // Generate optimized route (nearest neighbor algorithm)
-      const optimizedRoutePoints: RoutePoint[] = [
-        { id: 'depot-start', location: depot, isDepot: true }
+      const optimizedPoints: RoutePoint[] = [
+        { location: depot }, // Start at depot
       ];
       
-      let optimizedDistance = 0;
-      let remainingBins = [...binsNeedingCollection];
-      let currentPoint = depot;
+      // Add bins sorted by fill level
+      sortedBins.forEach(bin => {
+        // Only add bins that need collection (above 50% full)
+        if (bin.fillLevel > 50) {
+          optimizedPoints.push({
+            location: bin.location,
+            binId: bin.id
+          });
+        }
+      });
       
-      // Build route by always going to the nearest bin next
-      while (remainingBins.length > 0) {
-        // Find nearest bin to current position
-        let minDistance = Infinity;
-        let nearestBinIndex = -1;
-        
-        remainingBins.forEach((bin, index) => {
-          const distance = calculateDistance(currentPoint, bin.location);
-          if (distance < minDistance) {
-            minDistance = distance;
-            nearestBinIndex = index;
-          }
-        });
-        
-        // Add nearest bin to route
-        const nearestBin = remainingBins[nearestBinIndex];
-        optimizedRoutePoints.push({
-          id: `route-point-${nearestBin.id}`,
-          location: nearestBin.location,
-          binId: nearestBin.id
-        });
-        
-        // Update metrics
-        optimizedDistance += minDistance;
-        currentPoint = nearestBin.location;
-        
-        // Remove bin from remaining bins
-        remainingBins.splice(nearestBinIndex, 1);
-      }
+      optimizedPoints.push({ location: depot }); // Return to depot
       
-      // Return to depot
-      optimizedRoutePoints.push({ id: 'depot-end', location: depot, isDepot: true });
-      optimizedDistance += calculateDistance(currentPoint, depot);
+      // Calculate metrics for both routes
+      const traditionalMetrics = calculateRouteMetrics(traditionalPoints);
+      const optimizedMetrics = calculateRouteMetrics(optimizedPoints);
       
-      // Calculate metrics for optimized route
-      const optimizedMetrics: RouteMetrics = {
-        totalDistance: optimizedDistance,
-        estimatedDuration: optimizedDistance / 25 * 60, // Assuming 25 km/h avg speed, convert to minutes
-        fuelConsumption: optimizedDistance * 0.3, // Assuming 0.3L/km
-        co2Emissions: optimizedDistance * 2.68, // kg CO2 per liter diesel * fuel consumption
-        binsCollected: binsNeedingCollection.length,
-        totalWasteCollected: binsNeedingCollection.reduce((sum, bin) => sum + (bin.capacity * bin.fillLevel / 100), 0)
-      };
-      
-      // Create the route objects
-      const traditionalRoute: Route = {
-        id: 'traditional-route',
-        name: 'Traditional Fixed Route',
-        points: traditionalRoutePoints,
-        vehicle: {
-          id: 'vehicle-traditional',
-          currentPosition: depot,
-          currentRouteIndex: 0,
-          capacity: 5000, // 5000 liters
-          currentLoad: 0,
-          speed: 25, // 25 km/h
-          status: 'idle'
+      // Create route objects
+      state.routes = [
+        {
+          id: 'traditional',
+          name: 'Traditional Collection Route',
+          type: 'traditional',
+          points: traditionalPoints,
+          inProgress: false,
+          completed: false,
+          progress: 0,
+          metrics: traditionalMetrics,
         },
-        metrics: traditionalMetrics,
-        type: 'traditional',
-        completed: false,
-        inProgress: false
-      };
-      
-      const optimizedRoute: Route = {
-        id: 'optimized-route',
-        name: 'Smart Optimized Route',
-        points: optimizedRoutePoints,
-        vehicle: {
-          id: 'vehicle-optimized',
-          currentPosition: depot,
-          currentRouteIndex: 0,
-          capacity: 5000, // 5000 liters
-          currentLoad: 0,
-          speed: 25, // 25 km/h
-          status: 'idle'
-        },
-        metrics: optimizedMetrics,
-        type: 'optimized',
-        completed: false,
-        inProgress: false
-      };
-      
-      // Add routes to state
-      state.routes = [traditionalRoute, optimizedRoute];
-      
-      // Update route comparison metrics
-      state.routeComparison = {
-        traditionalMetrics,
-        optimizedMetrics
-      };
+        {
+          id: 'optimized',
+          name: 'Smart Optimized Collection Route',
+          type: 'optimized',
+          points: optimizedPoints,
+          inProgress: false,
+          completed: false,
+          progress: 0,
+          metrics: optimizedMetrics,
+        }
+      ];
     },
     
+    // Start a route
     startRoute: (state, action: PayloadAction<string>) => {
       const routeId = action.payload;
-      const route = state.routes.find(r => r.id === routeId);
+      state.activeRouteId = routeId;
       
+      const route = state.routes.find(r => r.id === routeId);
       if (route) {
         route.inProgress = true;
-        route.vehicle.status = 'en-route';
-        state.activeRouteId = routeId;
+        route.completed = false;
+        route.progress = 0;
       }
     },
     
-    updateRouteProgress: (state, action: PayloadAction<{ routeId: string, progress: number }>) => {
+    // Update route progress
+    updateRouteProgress: (state, action: PayloadAction<{
+      routeId: string;
+      progress: number;
+    }>) => {
       const { routeId, progress } = action.payload;
       const route = state.routes.find(r => r.id === routeId);
       
-      if (route && route.inProgress) {
-        const totalPoints = route.points.length;
-        const exactIndex = progress * (totalPoints - 1);
-        const currentIndex = Math.floor(exactIndex);
-        const fraction = exactIndex - currentIndex;
+      if (route) {
+        route.progress = progress;
         
-        if (currentIndex >= totalPoints - 1) {
-          // Route is complete
-          route.vehicle.currentPosition = route.points[totalPoints - 1].location;
-          route.vehicle.currentRouteIndex = totalPoints - 1;
-          route.completed = true;
+        if (progress >= 1) {
           route.inProgress = false;
-          route.vehicle.status = 'idle';
+          route.completed = true;
           state.activeRouteId = null;
-        } else {
-          // Interpolate position between current and next point
-          const currentPoint = route.points[currentIndex].location;
-          const nextPoint = route.points[currentIndex + 1].location;
-          
-          const lat = currentPoint[0] + (nextPoint[0] - currentPoint[0]) * fraction;
-          const lng = currentPoint[1] + (nextPoint[1] - currentPoint[1]) * fraction;
-          
-          route.vehicle.currentPosition = [lat, lng];
-          route.vehicle.currentRouteIndex = currentIndex;
-          
-          // If very close to a bin point, mark as collecting
-          if (fraction > 0.9 && route.points[currentIndex + 1].binId) {
-            route.vehicle.status = 'collecting';
-          } else {
-            route.vehicle.status = 'en-route';
-          }
         }
       }
     },
+
+    // Empty a bin from a route
+    emptyBin: (state, action: PayloadAction<string>) => {
+      // This action is handled by the bins slice
+      // This is a placeholder to satisfy action imports
+    },
     
+    // Reset routes
     resetRoutes: (state) => {
       state.routes = [];
       state.activeRouteId = null;
-      state.routeComparison = {
-        traditionalMetrics: null,
-        optimizedMetrics: null,
-      };
-    },
-    
-    emptyBin: (state, action: PayloadAction<string>) => {
-      // This action is needed for SimulationEngine
-      // It will be handled in the bins reducer, but we need to export it here for SimulationEngine
-      // Implementation is in binsSlice.ts
     }
-  }
+  },
 });
 
-export const {
-  generateRoutes,
-  startRoute,
-  updateRouteProgress,
-  resetRoutes,
-  emptyBin,  // Add the export for emptyBin
+export const { 
+  generateRoutes, 
+  startRoute, 
+  updateRouteProgress, 
+  emptyBin,
+  resetRoutes 
 } = routesSlice.actions;
 
 export default routesSlice.reducer;
