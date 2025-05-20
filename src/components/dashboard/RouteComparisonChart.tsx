@@ -12,7 +12,7 @@ import {
   ChartOptions,
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import type { RouteMetrics } from '../../store/slices/routesSlice';
+import { RouteMetrics } from '../../store/slices/routesSlice';
 
 ChartJS.register(
   CategoryScale,

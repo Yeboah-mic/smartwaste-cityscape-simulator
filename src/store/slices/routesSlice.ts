@@ -7,6 +7,15 @@ export interface RoutePoint {
   binId?: string; // Optional bin ID if this point has a bin
 }
 
+// Define metrics type for routes
+export interface RouteMetrics {
+  totalDistance: number; // kilometers
+  estimatedDuration: number; // minutes
+  binsCollected: number; // count
+  fuelConsumption: number; // liters
+  co2Emissions: number; // kg
+}
+
 // Define route type
 export interface Route {
   id: string;
@@ -16,23 +25,23 @@ export interface Route {
   inProgress: boolean;
   completed: boolean;
   progress: number; // 0-1 for animation
-  metrics: {
-    totalDistance: number; // kilometers
-    estimatedDuration: number; // minutes
-    binsCollected: number; // count
-  };
+  metrics: RouteMetrics;
 }
 
 // Define the state type
 interface RoutesState {
   routes: Route[];
   activeRouteId: string | null;
+  traditionalMetrics: RouteMetrics | null;
+  optimizedMetrics: RouteMetrics | null;
 }
 
 // Initial state
 const initialState: RoutesState = {
   routes: [],
   activeRouteId: null,
+  traditionalMetrics: null,
+  optimizedMetrics: null,
 };
 
 // Helper to calculate route metrics
@@ -57,10 +66,16 @@ const calculateRouteMetrics = (points: RoutePoint[]) => {
   const drivingMinutes = (distance / 30) * 60;
   const collectionMinutes = binsCount * 2;
   
+  // Calculate fuel consumption and CO2 emissions
+  const fuelConsumption = distance * 0.3; // 0.3L per km
+  const co2Emissions = fuelConsumption * 2.68; // 2.68kg CO2 per liter of diesel
+  
   return {
     totalDistance: distance,
     estimatedDuration: drivingMinutes + collectionMinutes,
     binsCollected: binsCount,
+    fuelConsumption: fuelConsumption,
+    co2Emissions: co2Emissions
   };
 };
 
@@ -114,6 +129,10 @@ export const routesSlice = createSlice({
       // Calculate metrics for both routes
       const traditionalMetrics = calculateRouteMetrics(traditionalPoints);
       const optimizedMetrics = calculateRouteMetrics(optimizedPoints);
+      
+      // Save metrics to state
+      state.traditionalMetrics = traditionalMetrics;
+      state.optimizedMetrics = optimizedMetrics;
       
       // Create route objects
       state.routes = [
@@ -182,6 +201,8 @@ export const routesSlice = createSlice({
     resetRoutes: (state) => {
       state.routes = [];
       state.activeRouteId = null;
+      state.traditionalMetrics = null;
+      state.optimizedMetrics = null;
     }
   },
 });

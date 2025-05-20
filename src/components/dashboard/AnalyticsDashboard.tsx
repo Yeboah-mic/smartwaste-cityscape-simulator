@@ -16,7 +16,8 @@ import { CircleAlert, Truck, CircleCheck } from 'lucide-react';
 
 const AnalyticsDashboard: React.FC = () => {
   const bins = useAppSelector(state => state.bins.bins);
-  const routeComparison = useAppSelector(state => state.routes.routeComparison);
+  const traditionalMetrics = useAppSelector(state => state.routes.traditionalMetrics);
+  const optimizedMetrics = useAppSelector(state => state.routes.optimizedMetrics);
   
   // Calculate key metrics
   const averageFillLevel = bins.reduce((sum, bin) => sum + bin.fillLevel, 0) / bins.length;
@@ -36,8 +37,7 @@ const AnalyticsDashboard: React.FC = () => {
     time: 0,
   };
   
-  if (routeComparison.traditionalMetrics && routeComparison.optimizedMetrics) {
-    const { traditionalMetrics, optimizedMetrics } = routeComparison;
+  if (traditionalMetrics && optimizedMetrics) {
     savings.distance = traditionalMetrics.totalDistance - optimizedMetrics.totalDistance;
     savings.fuel = traditionalMetrics.fuelConsumption - optimizedMetrics.fuelConsumption;
     savings.co2 = traditionalMetrics.co2Emissions - optimizedMetrics.co2Emissions;
@@ -119,8 +119,8 @@ const AnalyticsDashboard: React.FC = () => {
         </CardHeader>
         <CardContent className="h-[300px]">
           <RouteComparisonChart 
-            traditionalMetrics={routeComparison.traditionalMetrics} 
-            optimizedMetrics={routeComparison.optimizedMetrics}
+            traditionalMetrics={traditionalMetrics} 
+            optimizedMetrics={optimizedMetrics}
           />
         </CardContent>
       </Card>
@@ -137,7 +137,7 @@ const AnalyticsDashboard: React.FC = () => {
               <p className="text-sm font-medium mb-1">Distance Reduction</p>
               <p className="text-2xl font-bold mb-1">{savings.distance.toFixed(1)} km</p>
               <p className="text-xs text-muted-foreground">
-                {((savings.distance / (routeComparison.traditionalMetrics?.totalDistance || 1)) * 100).toFixed(1)}% less travel distance
+                {((savings.distance / (traditionalMetrics?.totalDistance || 1)) * 100).toFixed(1)}% less travel distance
               </p>
             </div>
             
@@ -161,7 +161,7 @@ const AnalyticsDashboard: React.FC = () => {
               <p className="text-sm font-medium mb-1">Time Saved</p>
               <p className="text-2xl font-bold mb-1">{Math.floor(savings.time)} min</p>
               <p className="text-xs text-muted-foreground">
-                {((savings.time / (routeComparison.traditionalMetrics?.estimatedDuration || 1)) * 100).toFixed(1)}% reduction in collection time
+                {((savings.time / (traditionalMetrics?.estimatedDuration || 1)) * 100).toFixed(1)}% reduction in collection time
               </p>
             </div>
           </div>
