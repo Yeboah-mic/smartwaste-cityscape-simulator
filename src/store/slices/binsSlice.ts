@@ -44,13 +44,16 @@ const generateInitialBins = (): WasteBin[] => {
     const types = ['general', 'recycling', 'organic'] as const;
     const typeIndex = Math.floor(Math.random() * types.length);
     
+    // Make fill rates higher to make changes more noticeable in demo
+    const baseFillRate = 2 + Math.random() * 3; // 2-5% per hour, much faster for demo purposes
+    
     return {
       id: `bin-${i + 1}`,
       location: [centerLat + latOffset, centerLng + lngOffset],
       name: `Bin ${i + 1}`,
-      fillLevel: Math.random() * 60, // Start with varied fill levels (0-60%)
+      fillLevel: 20 + Math.random() * 40, // Start with varied fill levels (20-60%)
       capacity: 100 + Math.floor(Math.random() * 100), // 100-199 liters
-      baseFillRate: 0.5 + Math.random() * 1.5, // 0.5-2% per hour
+      baseFillRate: baseFillRate,
       variabilityFactor: Math.random() * 0.3, // 0-0.3 randomness factor
       sensorData: {
         batteryLevel: 70 + Math.floor(Math.random() * 30), // 70-99%

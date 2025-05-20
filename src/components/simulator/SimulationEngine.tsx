@@ -30,11 +30,15 @@ const SimulationEngine: React.FC = () => {
   useEffect(() => {
     if (!isRunning) return;
     
+    console.log("Simulation running with speed:", speed);
+    
     const timerRef = setInterval(() => {
       const now = Date.now();
       const realElapsed = now - new Date(lastUpdateTime).getTime();
       // Adjust elapsed time based on simulation speed
       const simulatedElapsed = realElapsed * speed;
+      
+      console.log(`Time update: real elapsed ${realElapsed}ms, simulated ${simulatedElapsed}ms, speed ${speed}x`);
       
       // Update simulation time
       const newTime = new Date(currentTime.getTime() + simulatedElapsed);
@@ -66,10 +70,11 @@ const SimulationEngine: React.FC = () => {
       if (activeRouteId) {
         const activeRoute = routes.find(route => route.id === activeRouteId);
         if (activeRoute && !activeRoute.completed) {
-          // Each second, progress by a small amount
-          // Complete the route in about 1 minute real time
-          const progressIncrease = 0.01 * speed;
+          // Increase progress more noticeably for demo purposes
+          const progressIncrease = 0.02 * speed;
           const newProgress = Math.min(1, routeProgressRef.current + progressIncrease);
+          
+          console.log(`Updating route progress: ${routeProgressRef.current} -> ${newProgress}`);
           
           // Update route progress
           dispatch(updateRouteProgress({ 
@@ -82,14 +87,17 @@ const SimulationEngine: React.FC = () => {
             const { points } = activeRoute;
             
             // Find the current route index based on progress
-            const currentIndex = Math.floor(newProgress * (points.length - 1));
+            const numSegments = points.length - 1;
+            const progressAlongRoute = newProgress * numSegments;
+            const currentIndex = Math.floor(progressAlongRoute);
             const nextIndex = currentIndex + 1;
-            const currentProgress = newProgress * (points.length - 1) - currentIndex;
+            const currentProgress = progressAlongRoute - currentIndex;
             
             // If we're close to a bin point, empty that bin
-            if (currentProgress > 0.9 && nextIndex < points.length) {
+            if (currentProgress > 0.8 && nextIndex < points.length) {
               const nextPoint = points[nextIndex];
               if (nextPoint.binId) {
+                console.log(`Emptying bin: ${nextPoint.binId}`);
                 dispatch(emptyBin(nextPoint.binId));
                 
                 // Add notification

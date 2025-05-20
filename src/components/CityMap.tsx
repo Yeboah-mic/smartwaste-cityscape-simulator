@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { useAppSelector } from '../hooks/useAppSelector';
 import { WasteBin } from '../store/slices/binsSlice';
@@ -36,6 +36,18 @@ const truckIcon = L.icon({
   iconAnchor: [19, 38],
 });
 
+// MapController component to set initial view
+const MapController = () => {
+  const map = useMap();
+  
+  useEffect(() => {
+    // Set initial view to Accra, Ghana
+    map.setView([5.6037, -0.1870], 13);
+  }, [map]);
+  
+  return null;
+};
+
 interface CityMapProps {
   onBinClick: (bin: WasteBin) => void;
 }
@@ -45,6 +57,7 @@ const CityMap: React.FC<CityMapProps> = ({ onBinClick }) => {
   const bins = useAppSelector(state => state.bins.bins);
   const routes = useAppSelector(state => state.routes.routes);
   const activeRouteId = useAppSelector(state => state.routes.activeRouteId);
+  const isRunning = useAppSelector(state => state.simulation.isRunning);
   
   // State for the truck position
   const [truckPosition, setTruckPosition] = useState<[number, number] | null>(null);
@@ -65,6 +78,8 @@ const CityMap: React.FC<CityMapProps> = ({ onBinClick }) => {
     const { points, progress } = activeRoute;
     if (points.length < 2) return;
     
+    console.log(`Route progress: ${progress}, points: ${points.length}`);
+    
     // Calculate which segment we're on
     const numSegments = points.length - 1;
     const progressAlongRoute = progress * numSegments;
@@ -79,6 +94,7 @@ const CityMap: React.FC<CityMapProps> = ({ onBinClick }) => {
     const lat = start[0] + (end[0] - start[0]) * progressInSegment;
     const lng = start[1] + (end[1] - start[1]) * progressInSegment;
     
+    console.log(`Truck position updated: [${lat}, ${lng}]`);
     setTruckPosition([lat, lng]);
   }, [activeRouteId, routes]);
 
@@ -89,6 +105,7 @@ const CityMap: React.FC<CityMapProps> = ({ onBinClick }) => {
       style={{ height: '100%', width: '100%' }}
       zoomControl={true}
     >
+      <MapController />
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
