@@ -5,7 +5,7 @@ import { useAppSelector } from '../../hooks/useAppSelector';
 import { updateSimulationTime, setLastUpdateTime } from '../../store/slices/simulationSlice';
 import { updateBinFillLevels, updateBinSensorData, WasteBin } from '../../store/slices/binsSlice';
 import { updateRouteProgress, emptyBin } from '../../store/slices/routesSlice';
-import { addNotification, Notification } from '../../store/slices/notificationsSlice';
+import { addNotification } from '../../store/slices/notificationsSlice';
 
 // Update frequency in ms
 const UPDATE_INTERVAL = 1000;
@@ -32,7 +32,7 @@ const SimulationEngine: React.FC = () => {
     
     const timerRef = setInterval(() => {
       const now = Date.now();
-      const realElapsed = now - lastUpdateTime.getTime();
+      const realElapsed = now - new Date(lastUpdateTime).getTime();
       // Adjust elapsed time based on simulation speed
       const simulatedElapsed = realElapsed * speed;
       

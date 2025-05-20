@@ -82,9 +82,9 @@ export const binsSlice = createSlice({
         
         // Base fill rate adjusted by scenario
         let scenarioMultiplier = 1;
-        if (scenario === 'weekend' && bin.neighborhood === 'Manhattan') {
+        if (scenario === 'weekend' && bin.neighborhood === 'Cantonments') {
           scenarioMultiplier = 0.7; // Reduced activity in business districts
-        } else if (scenario === 'weekend' && (bin.neighborhood === 'Brooklyn' || bin.neighborhood === 'Queens')) {
+        } else if (scenario === 'weekend' && (bin.neighborhood === 'Osu' || bin.neighborhood === 'Labone')) {
           scenarioMultiplier = 1.2; // Increased activity in residential areas
         } else if (scenario === 'special-event') {
           scenarioMultiplier = 2.0; // Much higher activity during special events

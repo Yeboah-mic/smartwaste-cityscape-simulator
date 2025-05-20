@@ -26,6 +26,8 @@ export const simulationSlice = createSlice({
   reducers: {
     startSimulation: (state) => {
       state.isRunning = true;
+      // Update lastUpdateTime to now when starting simulation
+      state.lastUpdateTime = new Date();
     },
     pauseSimulation: (state) => {
       state.isRunning = false;

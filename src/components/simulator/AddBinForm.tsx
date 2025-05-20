@@ -15,11 +15,11 @@ const AddBinForm: React.FC<AddBinFormProps> = ({ onClose }) => {
   
   // Form state
   const [name, setName] = useState('New Bin');
-  const [lat, setLat] = useState('40.7831');
-  const [lng, setLng] = useState('-73.9712');
+  const [lat, setLat] = useState('5.6037');
+  const [lng, setLng] = useState('-0.1870');
   const [capacity, setCapacity] = useState('150');
   const [baseFillRate, setBaseFillRate] = useState('1.0');
-  const [neighborhood, setNeighborhood] = useState('Manhattan');
+  const [neighborhood, setNeighborhood] = useState('Osu');
   const [type, setType] = useState<'general' | 'recycling' | 'organic'>('general');
   
   const handleSubmit = (e: React.FormEvent) => {
@@ -136,11 +136,11 @@ const AddBinForm: React.FC<AddBinFormProps> = ({ onClose }) => {
             onChange={(e) => setNeighborhood(e.target.value)}
             className="w-full p-2 rounded-md border border-input bg-background"
           >
-            <option value="Manhattan">Manhattan</option>
-            <option value="Brooklyn">Brooklyn</option>
-            <option value="Queens">Queens</option>
-            <option value="Bronx">Bronx</option>
-            <option value="Staten Island">Staten Island</option>
+            <option value="Airport Residential">Airport Residential</option>
+            <option value="Cantonments">Cantonments</option>
+            <option value="Osu">Osu</option>
+            <option value="Labone">Labone</option>
+            <option value="Adabraka">Adabraka</option>
           </select>
         </div>
         
