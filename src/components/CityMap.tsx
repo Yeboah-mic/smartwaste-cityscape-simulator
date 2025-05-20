@@ -49,8 +49,8 @@ const CityMap: React.FC<CityMapProps> = ({ onBinClick }) => {
   // State for the truck position
   const [truckPosition, setTruckPosition] = useState<[number, number] | null>(null);
 
-  // New York City center coordinates
-  const nyCenter: [number, number] = [40.7831, -73.9712];
+  // Accra, Ghana center coordinates
+  const accraCenter: [number, number] = [5.6037, -0.1870];
   
   // Calculate truck position based on active route progress
   useEffect(() => {
@@ -84,7 +84,7 @@ const CityMap: React.FC<CityMapProps> = ({ onBinClick }) => {
 
   return (
     <MapContainer 
-      center={nyCenter}
+      center={accraCenter}
       zoom={13}
       style={{ height: '100%', width: '100%' }}
       zoomControl={true}

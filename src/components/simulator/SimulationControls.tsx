@@ -68,8 +68,8 @@ const SimulationControls: React.FC = () => {
 
   // Generate collection routes
   const handleGenerateRoutes = () => {
-    // New York City Department of Sanitation HQ as depot
-    const depot: [number, number] = [40.7157, -74.0047];
+    // Accra Waste Management Department as depot
+    const depot: [number, number] = [5.5969, -0.1791];
     
     dispatch(generateRoutes({
       bins,

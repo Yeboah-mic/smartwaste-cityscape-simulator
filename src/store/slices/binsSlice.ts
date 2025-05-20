@@ -26,18 +26,18 @@ interface BinsState {
 }
 
 const generateInitialBins = (): WasteBin[] => {
-  // New York City coordinates centered around Manhattan
-  const centerLat = 40.7831;
-  const centerLng = -73.9712;
+  // Accra, Ghana coordinates
+  const centerLat = 5.6037;
+  const centerLng = -0.1870;
   
   // Generate 40 bins with random distribution around the city
   return Array.from({ length: 40 }, (_, i) => {
-    // Create random offsets (roughly within NYC area)
-    const latOffset = (Math.random() - 0.5) * 0.08;
-    const lngOffset = (Math.random() - 0.5) * 0.08;
+    // Create random offsets (roughly within Accra area)
+    const latOffset = (Math.random() - 0.5) * 0.05;
+    const lngOffset = (Math.random() - 0.5) * 0.05;
     
-    // Determine neighborhood based on location (simplified)
-    const neighborhoods = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'];
+    // Determine neighborhood based on location (Accra neighborhoods)
+    const neighborhoods = ['Airport Residential', 'Cantonments', 'Osu', 'Labone', 'Adabraka'];
     const neighborhoodIndex = Math.floor(Math.random() * neighborhoods.length);
     
     // Determine bin type
